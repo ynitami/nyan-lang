@@ -1,9 +1,14 @@
 {
+  "$schema": "https://json.schemastore.org/claude-code-settings.json",
   "permissions": {
     "allow": [
-      "Bash(ruby:*)"
+      "Bash(ruby:*)",
+      "Bash(ls:*)",
+      "Bash(sed:*)",
+      "Bash(timeout:*)",
+      "Bash(DEBUG=1 ruby interpreter.rb test_simple.nyan)",
+      "Bash(gtimeout:*)"
     ],
     "deny": []
-  },
-  "$schema": "https://json.schemastore.org/claude-code-settings.json"
+  }
 }

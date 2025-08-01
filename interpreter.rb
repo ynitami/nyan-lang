@@ -228,3 +228,25 @@ class NynLangInterpreter
     true
   end
 end
+
+# メイン実行部分
+if __FILE__ == $0
+  if ARGV.length == 0
+    puts "使い方: ruby interpreter.rb <ファイル名>"
+    exit 1
+  end
+
+  filename = ARGV[0]
+  begin
+    source = File.read(filename, encoding: 'UTF-8')
+    lexer = NynLangLexer.new(source)
+    tokens = lexer.tokenize
+    parser = NynLangParser.new(tokens)
+    ast = parser.parse
+    interpreter = NynLangInterpreter.new
+    interpreter.interpret(ast)
+  rescue => e
+    puts "エラー: #{e.message}"
+    puts e.backtrace if ENV['DEBUG']
+  end
+end
