@@ -1,14 +1,17 @@
 require_relative 'lexer'
 
+# 抽象構文木（AST）のノード - プログラムの構造を木構造で表現する
 class ASTNode
   attr_reader :type, :value, :children
 
+  # ノードのタイプ、値、子ノードを設定
   def initialize(type, value = nil, children = [])
     @type = type
     @value = value
     @children = children
   end
 
+  # デバッグ用の木構造表示
   def to_s(indent = 0)
     result = "  " * indent + "#{@type}"
     result += "(#{@value})" if @value
@@ -20,12 +23,15 @@ class ASTNode
   end
 end
 
+# 構文解析器（パーサー）- トークン列を抽象構文木（AST）に変換する
 class NynLangParser
+  # トークン配列を受け取り、解析の初期状態を設定
   def initialize(tokens)
     @tokens = tokens
     @position = 0
   end
 
+  # 全トークンを解析してプログラム全体のASTを生成（構文解析のメイン処理）
   def parse
     statements = []
     while !at_end?
@@ -37,30 +43,36 @@ class NynLangParser
 
   private
 
+  # 現在解析しているトークンを取得
   def current_token
     return nil if @position >= @tokens.length
     @tokens[@position]
   end
 
+  # 先読み（現在位置から指定した分だけ先のトークンを見る）
   def peek_token(offset = 1)
     pos = @position + offset
     return nil if pos >= @tokens.length
     @tokens[pos]
   end
 
+  # 次のトークンに進む
   def advance
     @position += 1 unless at_end?
   end
 
+  # 全トークンを解析し終わったかチェック
   def at_end?
     current_token.nil? || current_token.type == :EOF
   end
 
+  # 現在のトークンが指定されたタイプのいずれかと一致するかチェック
   def match(*types)
     return false if at_end?
     types.include?(current_token.type)
   end
 
+  # 指定されたタイプのトークンを消費（期待するトークンでなければエラー）
   def consume(type, message)
     if match(type)
       token = current_token
@@ -70,6 +82,7 @@ class NynLangParser
     raise_error(message)
   end
 
+  # 文（変数宣言、代入、関数宣言など）を解析
   def parse_statement
     case current_token&.type
     when :VAR_DECLARE
@@ -111,6 +124,7 @@ class NynLangParser
     end
   end
 
+  # 変数宣言（にゃー x みゃーみゃー 値）を解析
   def parse_variable_declaration
     advance # consume 'にゃー'
     name = consume(:IDENTIFIER, "変数名が必要にゃ").value
@@ -119,6 +133,7 @@ class NynLangParser
     ASTNode.new(:VAR_DECLARE, name, [value])
   end
 
+  # 変数代入（x みゃーみゃー 値）を解析
   def parse_assignment
     name = current_token.value
     advance # consume identifier
@@ -127,6 +142,7 @@ class NynLangParser
     ASTNode.new(:ASSIGNMENT, name, [value])
   end
 
+  # 関数宣言（にゃにゃ 関数名(引数) ふみふみ...おわり）を解析
   def parse_function_declaration
     advance # consume 'にゃにゃ'
     name = consume(:IDENTIFIER, "関数名が必要にゃ").value
@@ -158,6 +174,7 @@ class NynLangParser
     ASTNode.new(:FUNCTION_DECLARE, name, [ASTNode.new(:PARAMETERS, nil, param_nodes), body_node])
   end
 
+  # if文（シャー 条件 ふみふみ...おわり）を解析
   def parse_if_statement
     advance # consume 'シャー'
     condition = parse_expression
@@ -176,6 +193,7 @@ class NynLangParser
     ASTNode.new(:IF, nil, [condition_node, body_node])
   end
 
+  # while文（もしゃもしゃ 条件 ふみふみ...おわり）を解析
   def parse_while_statement
     advance # consume 'もしゃもしゃ'
     condition = parse_expression
@@ -194,27 +212,32 @@ class NynLangParser
     ASTNode.new(:WHILE, nil, [condition_node, body_node])
   end
 
+  # print文（ゴロゴロ 式）を解析
   def parse_print_statement
     advance # consume 'ゴロゴロ'
     expression = parse_expression
     ASTNode.new(:PRINT, nil, [expression])
   end
 
+  # return文（かえるにゃー 式）を解析
   def parse_return_statement
     advance # consume 'かえるにゃー'
     expression = parse_expression
     ASTNode.new(:RETURN, nil, [expression])
   end
 
+  # 式文（式だけの行）を解析
   def parse_expression_statement
     expr = parse_expression
     ASTNode.new(:EXPRESSION_STMT, nil, [expr])
   end
 
+  # 式全体を解析（比較演算から開始）
   def parse_expression
     parse_comparison
   end
 
+  # 比較演算（==, !=, >, <, >=, <=）を解析
   def parse_comparison
     expr = parse_addition
 
@@ -228,6 +251,7 @@ class NynLangParser
     expr
   end
 
+  # 加算・減算（+, -）を解析
   def parse_addition
     expr = parse_multiplication
 
@@ -241,6 +265,7 @@ class NynLangParser
     expr
   end
 
+  # 乗算・除算・剰余（*, /, %）を解析
   def parse_multiplication
     expr = parse_primary
 
@@ -254,6 +279,7 @@ class NynLangParser
     expr
   end
 
+  # 基本的な式（数値、文字列、変数、関数呼び出しなど）を解析
   def parse_primary
     case current_token&.type
     when :NUMBER
@@ -292,6 +318,7 @@ class NynLangParser
     end
   end
 
+  # 関数呼び出し（関数名(引数1, 引数2, ...)）を解析
   def parse_function_call(name)
     consume(:LPAREN, "'('が必要にゃ")
     
@@ -311,6 +338,7 @@ class NynLangParser
     ASTNode.new(:FUNCTION_CALL, name, arg_nodes)
   end
 
+  # 配列リテラル（[要素1, 要素2, ...]）を解析
   def parse_array_literal
     advance  # consume '['
     
@@ -328,6 +356,7 @@ class NynLangParser
     ASTNode.new(:ARRAY_LITERAL, nil, elements)
   end
 
+  # 配列アクセス（配列名[インデックス]）を解析
   def parse_array_access(array_name)
     advance  # consume '['
     index = parse_expression
@@ -335,6 +364,7 @@ class NynLangParser
     ASTNode.new(:ARRAY_ACCESS, array_name, [index])
   end
 
+  # エラーメッセージにトークンの位置情報を付けて例外を発生
   def raise_error(message)
     token = current_token
     if token

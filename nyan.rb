@@ -2,7 +2,9 @@
 
 require_relative 'interpreter'
 
+# Nyan語のメインクラス - ファイル実行やREPL機能を提供
 class NynLang
+  # ファイルからNyan語コードを読み込んで実行
   def self.run_file(filename)
     unless File.exist?(filename)
       puts "ファイルが見つからないにゃーん: #{filename}"
@@ -13,6 +15,7 @@ class NynLang
     run(source, filename)
   end
 
+  # ソースコードを字句解析→構文解析→実行の流れで処理する
   def self.run(source, filename = '<script>')
     begin
       lexer = NynLangLexer.new(source)
@@ -32,6 +35,7 @@ class NynLang
     end
   end
 
+  # REPL（対話的実行環境）を起動し、1行ずつコードを入力して実行
   def self.repl
     puts "NynLang（ねこ語）インタプリタにゃーん"
     puts "終了するには 'おしまい' と入力してにゃ"

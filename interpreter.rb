@@ -1,22 +1,27 @@
 require_relative 'parser'
 
+# 実行環境 - 変数と関数のスコープを管理する
 class Environment
+  # 親環境を持つ階層構造で初期化（スコープチェーンを実現）
   def initialize(parent = nil)
     @parent = parent
     @variables = {}
     @functions = {}
   end
 
+  # 変数を定義（現在のスコープに新しい変数を作成）
   def define_variable(name, value)
     @variables[name] = value
   end
 
+  # 変数の値を取得（現在のスコープから親スコープまで順に探索）
   def get_variable(name)
     return @variables[name] if @variables.has_key?(name)
     return @parent.get_variable(name) if @parent
     raise "そんな変数知らないにゃー: #{name}"
   end
 
+  # 既存の変数に値を代入（定義済みの変数をスコープチェーンで探して更新）
   def set_variable(name, value)
     if @variables.has_key?(name)
       @variables[name] = value
@@ -27,10 +32,12 @@ class Environment
     end
   end
 
+  # 関数を定義（現在のスコープに新しい関数を作成）
   def define_function(name, params, body)
     @functions[name] = { params: params, body: body }
   end
 
+  # 関数の定義を取得（現在のスコープから親スコープまで順に探索）
   def get_function(name)
     return @functions[name] if @functions.has_key?(name)
     return @parent.get_function(name) if @parent
@@ -38,21 +45,26 @@ class Environment
   end
 end
 
+# return文の値を運ぶ例外クラス - 関数から早期リターンするために使用
 class ReturnValue < StandardError
   attr_reader :value
 
+  # return文で返される値を保持
   def initialize(value)
     @value = value
     super()
   end
 end
 
+# インタープリター - ASTを実行して結果を得る
 class NynLangInterpreter
+  # グローバル環境を作成し、現在の実行環境として設定
   def initialize
     @global_env = Environment.new
     @current_env = @global_env
   end
 
+  # ASTを実行してプログラムを動かす（インタープリターのメイン処理）
   def interpret(ast)
     begin
       execute_node(ast)
@@ -63,6 +75,7 @@ class NynLangInterpreter
 
   private
 
+  # ASTノードを実行して値を返す（各構文要素の実行処理）
   def execute_node(node)
     case node.type
     when :PROGRAM
@@ -167,6 +180,7 @@ class NynLangInterpreter
     end
   end
 
+  # 二項演算（+, -, *, /, ==, != など）を実行
   def execute_binary_operation(node)
     left = execute_node(node.children[0])
     right = execute_node(node.children[1])
@@ -211,6 +225,7 @@ class NynLangInterpreter
     end
   end
 
+  # 関数呼び出しを実行（新しいスコープを作って引数を渡し、関数本体を実行）
   def execute_function_call(node)
     function_name = node.value
     args = node.children.map { |arg| execute_node(arg) }
@@ -242,6 +257,7 @@ class NynLangInterpreter
     result
   end
 
+  # 値が真かどうかを判定（条件文で使用）
   def is_truthy(value)
     return false if value.nil?
     return false if value == false
