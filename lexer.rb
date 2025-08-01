@@ -42,7 +42,9 @@ class NynLangLexer
     '<=' => :LESS_EQUAL,
     '(' => :LPAREN,
     ')' => :RPAREN,
-    ',' => :COMMA
+    ',' => :COMMA,
+    '[' => :LBRACKET,
+    ']' => :RBRACKET
   }.freeze
 
   def initialize(source)
@@ -66,7 +68,7 @@ class NynLangLexer
         read_string
       when '#'
         skip_comment
-      when '+', '-', '*', '/', '%', '(', ')', ','
+      when '+', '-', '*', '/', '%', '(', ')', ',', '[', ']'
         read_single_char_operator
       when '=', '!', '>', '<'
         read_comparison_operator

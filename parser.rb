@@ -77,6 +77,22 @@ class NynLangParser
     when :IDENTIFIER
       if peek_token&.type == :ASSIGN
         parse_assignment
+      elsif peek_token&.type == :LBRACKET
+        # Check if it's array assignment: identifier[index] = value
+        name = current_token.value
+        advance
+        advance  # consume '['
+        index = parse_expression
+        consume(:RBRACKET, "']'が必要にゃ")
+        if match(:ASSIGN)
+          advance  # consume '='
+          value = parse_expression
+          ASTNode.new(:ARRAY_ASSIGNMENT, name, [index, value])
+        else
+          # It's just array access, treat as expression
+          array_access = ASTNode.new(:ARRAY_ACCESS, name, [index])
+          ASTNode.new(:EXPRESSION_STMT, nil, [array_access])
+        end
       else
         parse_expression_statement
       end
@@ -259,9 +275,13 @@ class NynLangParser
       advance
       if match(:LPAREN)
         parse_function_call(name)
+      elsif match(:LBRACKET)
+        parse_array_access(name)
       else
         ASTNode.new(:IDENTIFIER, name)
       end
+    when :LBRACKET
+      parse_array_literal
     when :LPAREN
       advance
       expr = parse_expression
@@ -289,6 +309,30 @@ class NynLangParser
     
     arg_nodes = args
     ASTNode.new(:FUNCTION_CALL, name, arg_nodes)
+  end
+
+  def parse_array_literal
+    advance  # consume '['
+    
+    elements = []
+    while !match(:RBRACKET) && !at_end?
+      elements << parse_expression
+      if match(:COMMA)
+        advance
+      elsif !match(:RBRACKET)
+        raise_error("','か']'が必要にゃ")
+      end
+    end
+    
+    consume(:RBRACKET, "']'が必要にゃ")
+    ASTNode.new(:ARRAY_LITERAL, nil, elements)
+  end
+
+  def parse_array_access(array_name)
+    advance  # consume '['
+    index = parse_expression
+    consume(:RBRACKET, "']'が必要にゃ")
+    ASTNode.new(:ARRAY_ACCESS, array_name, [index])
   end
 
   def raise_error(message)

@@ -142,6 +142,26 @@ class NynLangInterpreter
       raise ReturnValue.new(value)
     when :EXPRESSION_STMT
       execute_node(node.children[0])
+    when :ARRAY_LITERAL
+      node.children.map { |child| execute_node(child) }
+    when :ARRAY_ACCESS
+      array = @current_env.get_variable(node.value)
+      index = execute_node(node.children[0])
+      if array.is_a?(Array) && index.is_a?(Integer) && index >= 0 && index < array.length
+        array[index]
+      else
+        raise "配列アクセスエラーにゃ: #{node.value}[#{index}]"
+      end
+    when :ARRAY_ASSIGNMENT
+      array = @current_env.get_variable(node.value)
+      index = execute_node(node.children[0])
+      value = execute_node(node.children[1])
+      if array.is_a?(Array) && index.is_a?(Integer) && index >= 0 && index < array.length
+        array[index] = value
+        value
+      else
+        raise "配列代入エラーにゃ: #{node.value}[#{index}]"
+      end
     else
       raise "不明なノードタイプにゃ: #{node.type}"
     end
@@ -155,6 +175,8 @@ class NynLangInterpreter
     when :PLUS
       if left.is_a?(String) || right.is_a?(String)
         left.to_s + right.to_s
+      elsif left.is_a?(Array) && right.is_a?(Array)
+        left + right
       else
         left + right
       end
