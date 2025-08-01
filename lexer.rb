@@ -33,6 +33,7 @@ class NynLangLexer
     '-' => :MINUS,
     '*' => :MULTIPLY,
     '/' => :DIVIDE,
+    '%' => :MODULO,
     '==' => :EQUAL,
     '!=' => :NOT_EQUAL,
     '>' => :GREATER,
@@ -65,7 +66,7 @@ class NynLangLexer
         read_string
       when '#'
         skip_comment
-      when '+', '-', '*', '/', '(', ')', ','
+      when '+', '-', '*', '/', '%', '(', ')', ','
         read_single_char_operator
       when '=', '!', '>', '<'
         read_comparison_operator
@@ -164,6 +165,16 @@ class NynLangLexer
           value += "\\"
         when '"'
           value += '"'
+        when '0'
+          # \033 (ESC) の処理
+          if peek_char == '3' && peek_char(2) == '3'
+            advance # 0
+            advance # 3
+            advance # 3
+            value += "\e"
+          else
+            value += current_char
+          end
         else
           value += current_char
         end

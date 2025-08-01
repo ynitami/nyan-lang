@@ -228,7 +228,7 @@ class NynLangParser
   def parse_multiplication
     expr = parse_primary
 
-    while match(:MULTIPLY, :DIVIDE)
+    while match(:MULTIPLY, :DIVIDE, :MODULO)
       operator = current_token.type
       advance
       right = parse_primary

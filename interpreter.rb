@@ -91,7 +91,27 @@ class NynLangInterpreter
       execute_binary_operation(node)
     when :PRINT
       value = execute_node(node.children[0])
-      puts value
+      # 特別な制御コマンドの処理
+      if value.is_a?(String)
+        case value
+        when "CLEAR_SCREEN"
+          print "\e[2J\e[H"
+          $stdout.flush
+        when "NEWLINE"
+          puts
+        else
+          if value.include?("SLEEP:")
+            sleep_time = value.split(":")[1].to_f
+            sleep(sleep_time)
+          else
+            print value
+            $stdout.flush
+          end
+        end
+      else
+        print value
+        $stdout.flush
+      end
       value
     when :FUNCTION_DECLARE
       params = node.children[0].children.map { |p| p.value }
@@ -147,6 +167,11 @@ class NynLangInterpreter
         raise "0で割ることはできないにゃー"
       end
       left / right
+    when :MODULO
+      if right == 0
+        raise "0で割ることはできないにゃー"
+      end
+      left % right
     when :EQUAL
       left == right
     when :NOT_EQUAL
